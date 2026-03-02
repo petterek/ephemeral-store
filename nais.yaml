@@ -1,0 +1,24 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: ephemral-storage
+  namespace: default
+  labels:
+    team: default
+spec:
+  image: "{{image}}"
+  port: 8080
+  replicas:
+    min: 1
+    max: 2
+  liveness:
+    path: /isalive
+  readiness:
+    path: /isready
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+  ingresses: []
