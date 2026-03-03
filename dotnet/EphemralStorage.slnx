@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="EphemralStorage.Core/EphemralStorage.Core.csproj" />
+  <Project Path="EphemralStorage.Memory/EphemralStorage.Memory.csproj" />
+  <Project Path="EphemralStorage.Tests/EphemralStorage.Tests.csproj" />
+  <Project Path="EphemralStorage/EphemralStorage.csproj" />
+</Solution>

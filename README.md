@@ -1,6 +1,6 @@
 # 🔐 Ephemeral Storage
 
-A lightweight Go service for sharing secrets that self-destruct. Values are **readable only once** and automatically expire after a configurable TTL.
+A service for sharing secrets that self-destruct. Values are **readable only once** and automatically expire after a configurable TTL. Implemented in both Go and .NET for comparison.
 
 ## Features
 
@@ -11,12 +11,17 @@ A lightweight Go service for sharing secrets that self-destruct. Values are **re
 - **API docs** — built-in Swagger UI at `/docs.html`
 - **NAIS-ready** — Dockerfile and `nais.yaml` included
 
-## Quick start
+## Implementations
 
-```sh
-go run ./cmd/server
-# → http://localhost:8080
-```
+| | Go | .NET |
+|---|---|---|
+| Directory | [`golang/`](golang/) | [`dotnet/`](dotnet/) |
+| Framework | net/http (stdlib) | ASP.NET Core Minimal API |
+| Storage interface | `Store` | `IStore` |
+| Test command | `go test ./...` | `dotnet test` |
+| Run command | `go run ./cmd/server` | `dotnet run --project EphemralStorage` |
+
+Both implementations expose the same API on port 8080.
 
 ## API
 
@@ -28,8 +33,6 @@ curl -X POST http://localhost:8080/keys \
   -d '{"sender":"alice","datatype":"password","value":"s3cret","ttl":60}'
 ```
 
-Response:
-
 ```json
 {"key":"YWxpY2UucGFzc3dvcmQuMTcwOTMwMDAwMDAwMA=="}
 ```
@@ -39,8 +42,6 @@ Response:
 ```sh
 curl http://localhost:8080/keys/YWxpY2UucGFzc3dvcmQuMTcwOTMwMDAwMDAwMA==
 ```
-
-Response:
 
 ```json
 {"value":"s3cret"}
@@ -54,38 +55,47 @@ A second read returns `404`.
 curl http://localhost:8080/events
 ```
 
-## Docker
+## Architecture
+
+```
+                  ┌──────────────┐
+                  │  HTTP/SSE    │
+                  │  Handler     │
+                  └──────┬───────┘
+                         │
+                  ┌──────▼───────┐
+                  │   Service    │
+                  │  (read-once) │
+                  └──────┬───────┘
+                         │
+                  ┌──────▼───────┐
+                  │    Store     │◄── interface
+                  └──────┬───────┘
+                         │
+                  ┌──────▼───────┐
+                  │ MemoryStore  │◄── implementation
+                  └──────────────┘
+```
+
+The storage backend is pluggable via the `Store` / `IStore` interface. The in-memory implementation is provided as a separate module in both projects.
+
+## Performance
+
+Benchmarks run on Intel Core Ultra 5 225U (best of 3 runs):
+
+| Benchmark | Go (ns/op) | .NET (ns/op) |
+|---|---:|---:|
+| Insert | 749 | 301 |
+| InsertAndRead | 177 | 120 |
+| ConcurrentInsertAndRead | 498 | 306 |
+| List (1000 entries) | 17,460 | 16,864 |
+
+Run benchmarks:
 
 ```sh
-# Build
-CGO_ENABLED=0 go build -o server ./cmd/server
-docker build -t ephemral-storage .
+# Go
+cd golang && go test ./tests -bench=. -benchmem
 
-# Run
-docker run -p 8080:8080 ephemral-storage
-```
-
-## NAIS deployment
-
-Update `namespace`, `team`, and `ingresses` in `nais.yaml`, then:
-
-```sh
-kubectl apply -f nais.yaml
-```
-
-## Testing
-
-```sh
-go test ./...                                    # all tests
-go test ./tests -run TestHTTPInsertAndRead       # single test
-```
-
-## Project structure
-
-```
-cmd/server/          Entry point and static assets
-storage/             Core logic: Store interface, MemoryStore, Service, Handler, SSE hub
-tests/               Integration and unit tests
-nais.yaml            NAIS application manifest
-Dockerfile           Container image definition
+# .NET
+cd dotnet && dotnet test --filter "PerformanceTests" -c Release
 ```

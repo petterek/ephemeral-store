@@ -1,27 +1,51 @@
-# Binaries
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-server
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
 
-# Test binary
-*.test
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+*.nuget.props
+*.nuget.targets
+project.lock.json
 
-# Output of go coverage
-*.out
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-# Go workspace
-go.work
-go.work.sum
+# Visual Studio
+.vs/
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+launchSettings.json
 
-# IDE
+# Rider
 .idea/
+
+# VS Code
 .vscode/
-*.swp
-*.swo
-*~
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResult.xml
+BenchmarkDotNet.Artifacts/
 
 # OS
 .DS_Store

@@ -1,0 +1,125 @@
+openapi: "3.0.3"
+info:
+  title: Ephemeral Storage API
+  description: A service for storing values that are readable only once and expire after a TTL.
+  version: "1.0.0"
+servers:
+  - url: /
+paths:
+  /keys:
+    post:
+      summary: Store a value
+      description: >
+        Stores a value with a server-generated key (base64 of sender.datatype.timestamp).
+        The value can only be read once before it is deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertRequest"
+      responses:
+        "201":
+          description: Value stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsertResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /keys/{key}:
+    get:
+      summary: Read a value (once)
+      description: >
+        Retrieves a value by its key. The value is deleted after being read
+        and cannot be retrieved again.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Base64-encoded key returned from the insert endpoint
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Value retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadResponse"
+        "404":
+          description: Key not found or already read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /events:
+    get:
+      summary: Live storage updates (SSE)
+      description: >
+        Server-Sent Events stream that pushes the current storage contents
+        whenever a value is inserted or read.
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StorageEntry"
+components:
+  schemas:
+    InsertRequest:
+      type: object
+      required:
+        - sender
+        - datatype
+        - value
+      properties:
+        sender:
+          type: string
+          example: alice
+        datatype:
+          type: string
+          example: password
+        value:
+          type: string
+          example: super-secret-data
+        ttl:
+          type: integer
+          description: Time-to-live in seconds (default 60)
+          example: 60
+    InsertResponse:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Base64-encoded key (sender.datatype.timestamp)
+          example: YWxpY2UucGFzc3dvcmQuMTcwOTMwMDAwMDAwMA==
+    ReadResponse:
+      type: object
+      properties:
+        value:
+          type: string
+          example: super-secret-data
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: key not found
+    StorageEntry:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        expires_in:
+          type: integer
+          description: Remaining TTL in seconds
